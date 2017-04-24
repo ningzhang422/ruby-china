@@ -36,8 +36,10 @@
               <%= link_to(raw('<i class="fa fa-globe"></i>'), @user.website_url, target: '_blank', rel: 'nofollow') %>
             <% end %>
 
-            <% if !@user.github.blank? %>
-              <%= link_to(raw('<i class="fa fa-github"></i>'), @user.github_url, target: '_blank', rel: 'nofollow') %>
+            <% if Setting.has_module? :github %>
+              <% if !@user.github.blank? %>
+                <%= link_to(raw('<i class="fa fa-github"></i>'), @user.github_url, target: '_blank', rel: 'nofollow') %>
+              <% end %>
             <% end %>
 
             <% if !@user.email.blank? && @user.email_public %>
@@ -56,7 +58,7 @@
           <%= link_to "正在关注", following_user_path(@user), class: "text" %>
         </div>
         <div class="col-xs-4 stars">
-          <%= link_to @user.favorite_topics_count, favorites_user_path(@user), class: "counter" %>
+          <%= link_to @user.favorites_count, favorites_user_path(@user), class: "counter" %>
           <%= link_to "收藏", favorites_user_path(@user), class: "text" %>
         </div>
       </div>
@@ -77,17 +79,23 @@
         <%= @user.tagline %>
       </div>
       <% end %>
+
+      <div class="buttons">
+        <%= reward_user_tag(@user, class: "btn btn-block btn-default") %>
+      </div>
     </div>
   </div>
 
-  <% if !@user.teams.blank? %>
-  <div class="panel user-teams">
-    <div class="panel-body">
-      <% @user.teams.each do |team| %>
-        <%= user_avatar_tag(team, :md) %>
-      <% end %>
+  <% if Setting.has_module?(:team) %>
+    <% if !@user.teams.blank? %>
+    <div class="panel user-teams">
+      <div class="panel-body">
+        <% @user.teams.each do |team| %>
+          <%= user_avatar_tag(team, :md) %>
+        <% end %>
+      </div>
     </div>
-  </div>
+    <% end %>
   <% end %>
 
   <%= render '/users/repos', user: @user %>

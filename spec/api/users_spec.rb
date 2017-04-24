@@ -157,7 +157,7 @@ describe 'API V3', 'users', type: :request do
                   last_reply_user_login created_at updated_at replies_count)
       expect(json['topics'][0]).to include(*fields)
       expect(json['topics'][0]['id']).to eq @topics[1].id
-      expect(json['topics'][1]['id']).to eq @topics[3].id
+      expect(json['topics'][1]['id']).to eq @topics[0].id
     end
   end
 
@@ -241,8 +241,8 @@ describe 'API V3', 'users', type: :request do
       post "/api/v3/users/#{user.login}/follow.json"
       expect(response.status).to eq 200
       expect(json['ok']).to eq 1
-      current_user.reload
-      expect(current_user.followed?(user)).to eq true
+      followed = current_user.follow_user?(user)
+      expect(followed).to eq true
     end
 
     it 'should unfollow work' do
@@ -251,8 +251,8 @@ describe 'API V3', 'users', type: :request do
       post "/api/v3/users/#{user.login}/unfollow.json"
       expect(response.status).to eq 200
       expect(json['ok']).to eq 1
-      current_user.reload
-      expect(current_user.followed?(user)).to eq false
+      followed = current_user.follow_user?(user)
+      expect(followed).to eq false
     end
   end
 
@@ -273,7 +273,7 @@ describe 'API V3', 'users', type: :request do
       expect(response.status).to eq 200
       expect(json['ok']).to eq 1
       current_user.reload
-      expect(current_user.blocked_user?(user)).to eq true
+      expect(current_user.block_user?(user)).to eq true
     end
 
     it 'should unfollow' do
@@ -283,7 +283,7 @@ describe 'API V3', 'users', type: :request do
       expect(response.status).to eq 200
       expect(json['ok']).to eq 1
       current_user.reload
-      expect(current_user.blocked_user?(user)).to eq false
+      expect(current_user.block_user?(user)).to eq false
     end
   end
 end

@@ -5,7 +5,7 @@ Devise.setup do |config|
 
   # ==> Mailer Configuration
   # Configure the e-mail address which will be shown in DeviseMailer.
-  config.mailer_sender = Setting.email_sender
+  config.mailer_sender = Setting.mailer_sender
 
   # Configure the class responsible to send e-mails.
   config.mailer = 'Devise::Mailer'
@@ -174,7 +174,9 @@ Devise.setup do |config|
   # If you have any extra navigational formats, like :iphone or :mobile, you
   # should add them to the navigational formats lists. Default is [:html]
   # config.navigational_formats = [:html, :iphone]
-  config.omniauth :github, Setting.github_token, Setting.github_secret
+  if Setting.has_module? :github
+    config.omniauth :github, Setting.github_token, Setting.github_secret
+  end
   # config.omniauth :open_id, :store => OpenID::Store::Filesystem.new('/tmp'), :name => 'google', :identifier => 'https://www.google.com/accounts/o8/id', :require => 'omniauth-openid'
 
   # ==> Warden configuration

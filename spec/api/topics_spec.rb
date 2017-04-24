@@ -19,6 +19,7 @@ describe 'API V3', 'topics', type: :request do
 
       get '/api/v3/topics.json'
       expect(response.status).to eq(200)
+      json = JSON.parse(response.body)
       expect(json['topics'].size).to eq(4)
       fields = %w(id title created_at updated_at replied_at
                   replies_count node_name node_id last_reply_user_id
@@ -29,6 +30,11 @@ describe 'API V3', 'topics', type: :request do
       expect(titles).to be_include('This is an excellent topic')
       expect(titles).to be_include('This is a no_reply topic')
       expect(titles).to be_include('This is a popular topic')
+
+      get '/api/v3/topics.json', type: 'invalid_type'
+      expect(response.status).to eq(200)
+      json2 = JSON.parse(response.body)
+      expect(json2).to eq(json)
 
       get '/api/v3/topics.json', type: 'recent'
       expect(response.status).to eq(200)
@@ -278,7 +284,7 @@ describe 'API V3', 'topics', type: :request do
       expect(response.status).to eq(200)
       fields = %w(id title created_at updated_at replied_at body body_html
                   replies_count node_name node_id last_reply_user_id
-                  last_reply_user_login deleted user likes_count suggested_at)
+                  last_reply_user_login deleted user likes_count suggested_at closed_at)
       expect(json['topic']).to include(*fields)
       expect(json['meta']).to include(*%w(liked favorited followed))
       expect(json['topic']['title']).to eq('i want to know')
@@ -287,6 +293,11 @@ describe 'API V3', 'topics', type: :request do
       expect(json['topic']['abilities']).to include(*%w(update destroy))
       expect(json['topic']['abilities']['update']).to eq false
       expect(json['topic']['abilities']['destroy']).to eq false
+      expect(json['topic']['abilities']['ban']).to eq false
+      expect(json['topic']['abilities']['excellent']).to eq false
+      expect(json['topic']['abilities']['unexcellent']).to eq false
+      expect(json['topic']['abilities']['close']).to eq false
+      expect(json['topic']['abilities']['open']).to eq false
     end
 
     it 'should return right abilities when owner visit' do
@@ -296,6 +307,8 @@ describe 'API V3', 'topics', type: :request do
       expect(response.status).to eq(200)
       expect(json['topic']['abilities']['update']).to eq true
       expect(json['topic']['abilities']['destroy']).to eq true
+      expect(json['topic']['abilities']['close']).to eq true
+      expect(json['topic']['abilities']['open']).to eq true
     end
 
     it 'should return right abilities when admin visit' do
@@ -305,6 +318,11 @@ describe 'API V3', 'topics', type: :request do
       expect(response.status).to eq(200)
       expect(json['topic']['abilities']['update']).to eq true
       expect(json['topic']['abilities']['destroy']).to eq true
+      expect(json['topic']['abilities']['close']).to eq true
+      expect(json['topic']['abilities']['open']).to eq true
+      expect(json['topic']['abilities']['ban']).to eq true
+      expect(json['topic']['abilities']['excellent']).to eq true
+      expect(json['topic']['abilities']['unexcellent']).to eq true
     end
 
     it 'should work when id record found' do
@@ -346,12 +364,16 @@ describe 'API V3', 'topics', type: :request do
       it 'should work' do
         login_user!
         t = create(:topic, title: 'i want to know')
+        r0 = create(:reply)
         r1 = create(:reply, topic_id: t.id, body: 'let me tell', user: current_user)
         r2 = create(:reply, topic_id: t.id, body: 'let me tell again', deleted_at: Time.now)
+        r3 = create(:reply, topic_id: t.id, body: 'let me tell again again')
+        current_user.like(r0)
         current_user.like(r2)
+        current_user.like(r3)
         get "/api/v3/topics/#{t.id}/replies.json"
         expect(response.status).to eq(200)
-        expect(json['replies'].size).to eq 2
+        expect(json['replies'].size).to eq 3
         expect(json['replies'][0]).to include(*%w(id user body_html created_at updated_at deleted))
         expect(json['replies'][0]['user']).to include(*%w(id name login avatar_url))
         expect(json['replies'][0]['id']).to eq r1.id
@@ -362,7 +384,8 @@ describe 'API V3', 'topics', type: :request do
         expect(json['replies'][1]['deleted']).to eq true
         expect(json['replies'][1]['abilities']['update']).to eq false
         expect(json['replies'][1]['abilities']['destroy']).to eq false
-        expect(json['meta']['user_liked_reply_ids']).to eq([r2.id])
+        expect(json['meta']['user_liked_reply_ids']).not_to include(r0.id)
+        expect(json['meta']['user_liked_reply_ids']).to include(r2.id, r3.id)
       end
     end
 
@@ -390,6 +413,15 @@ describe 'API V3', 'topics', type: :request do
       expect(response.status).to eq(200)
       expect(t.reload.replies.first.body).to eq('new reply body')
     end
+
+    it 'should not create Reply when Topic was closed' do
+      login_user!
+      t = create(:topic, title: 'new topic 1', closed_at: Time.now)
+      post "/api/v3/topics/#{t.id}/replies.json", body: 'new reply body'
+      expect(response.status).to eq(400)
+      expect(json['message']).to include('已关闭，不再接受回帖')
+      expect(t.reload.replies.first).to eq nil
+    end
   end
 
   describe 'POST /api/v3/topics/:id/follow.json' do
@@ -398,7 +430,7 @@ describe 'API V3', 'topics', type: :request do
       t = create(:topic, title: 'new topic 2')
       post "/api/v3/topics/#{t.id}/follow.json"
       expect(response.status).to eq(200)
-      expect(t.reload.follower_ids).to include(current_user.id)
+      expect(t.reload.follow_by_user_ids).to include(current_user.id)
     end
   end
 
@@ -408,7 +440,7 @@ describe 'API V3', 'topics', type: :request do
       t = create(:topic, title: 'new topic 2')
       post "/api/v3/topics/#{t.id}/unfollow.json"
       expect(response.status).to eq(200)
-      expect(t.reload.follower_ids).not_to include(current_user.id)
+      expect(t.reload.follow_by_user_ids).not_to include(current_user.id)
     end
   end
 
@@ -449,6 +481,55 @@ describe 'API V3', 'topics', type: :request do
       t = create(:topic, user: current_user, title: 'new topic 3')
       post "/api/v3/topics/#{t.id}/ban.json"
       expect(response.status).to eq(403)
+    end
+  end
+
+  describe 'POST /api/v3/topics/:id/action.json' do
+    %w(excellent unexcellent ban).each do |action|
+      describe "#{action}" do
+        it 'should work with admin' do
+          login_admin!
+          t = create(:topic, user: current_user, title: 'new topic 3')
+          post "/api/v3/topics/#{t.id}/action.json?type=#{action}"
+          expect(response.status).to eq(200)
+        end
+
+        it 'should not work with normal user' do
+          login_user!
+          t = create(:topic, title: 'new topic 3')
+          post "/api/v3/topics/#{t.id}/action.json?type=#{action}"
+          expect(response.status).to eq(403)
+
+          t = create(:topic, user: current_user, title: 'new topic 3')
+          post "/api/v3/topics/#{t.id}/action.json?type=#{action}"
+          expect(response.status).to eq(403)
+        end
+      end
+    end
+
+    %w(close open).each do |action|
+      describe "#{action}" do
+        it 'should work with admin' do
+          login_admin!
+          t = create(:topic, user: current_user, title: 'new topic 3')
+          post "/api/v3/topics/#{t.id}/action.json?type=#{action}"
+          expect(response.status).to eq(200)
+        end
+
+        it 'should work with owner' do
+          login_user!
+          t = create(:topic, title: 'new topic 3', user: current_user)
+          post "/api/v3/topics/#{t.id}/action.json?type=#{action}"
+          expect(response.status).to eq(200)
+        end
+
+        it 'should not work with other users' do
+          login_user!
+          t = create(:topic, title: 'new topic 3')
+          post "/api/v3/topics/#{t.id}/action.json?type=#{action}"
+          expect(response.status).to eq(403)
+        end
+      end
     end
   end
 end

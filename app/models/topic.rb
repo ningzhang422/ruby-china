@@ -1,6 +1,8 @@
 require 'auto-space'
 
 CORRECT_CHARS = [
+  ['［', '['],
+  ['］', ']'],
   ['【', '['],
   ['】', ']'],
   ['（', '('],
@@ -8,13 +10,13 @@ CORRECT_CHARS = [
 ]
 
 class Topic < ApplicationRecord
-  include Likeable
   include MarkdownBody
   include SoftDelete
   include Mentionable
   include Closeable
   include Searchable
   include MentionTopic
+  include UserAvatarDelegate
 
   # 临时存储检测用户是否读过的结果
   attr_accessor :read_state, :admin_editing
@@ -43,36 +45,31 @@ class Topic < ApplicationRecord
   scope :popular,            -> { where('likes_count > 5') }
   scope :excellent,          -> { where('excellent >= 1') }
   scope :without_hide_nodes, -> { exclude_column_ids('node_id', Topic.topic_index_hide_node_ids) }
-  scope :without_body,       -> { select(column_names - ['body']) }
-  scope :without_node_ids,   -> (ids) { exclude_column_ids('node_id', ids) }
-  scope :exclude_column_ids, lambda { |column, ids|
-    if ids.empty?
-      all
-    else
-      where.not(column => ids)
-    end
-  }
+
+  scope :without_node_ids,   ->(ids) { exclude_column_ids('node_id', ids) }
+  scope :without_users,      ->(ids) { exclude_column_ids('user_id', ids) }
+  scope :exclude_column_ids, ->(column, ids) { ids.empty? ? all : where.not(column => ids) }
+
   scope :without_nodes, lambda { |node_ids|
     ids = node_ids + Topic.topic_index_hide_node_ids
     ids.uniq!
     exclude_column_ids('node_id', ids)
   }
-  scope :without_users, lambda { |user_ids|
-    exclude_column_ids('user_id', user_ids)
-  }
 
   mapping do
     indexes :title, term_vector: :yes
     indexes :body, term_vector: :yes
-    indexes :node_name
   end
 
   def as_indexed_json(_options = {})
     {
       title: self.title,
-      body: self.full_body,
-      node_name: self.node_name
+      body: self.full_body
     }
+  end
+
+  def indexed_changed?
+    title_changed? || body_changed?
   end
 
   def related_topics(size = 5)
@@ -97,7 +94,7 @@ class Topic < ApplicationRecord
   end
 
   def self.fields_for_list
-    columns = %w(body body_html who_deleted follower_ids)
+    columns = %w(body who_deleted)
     select(column_names - columns.map(&:to_s))
   end
 
@@ -123,7 +120,7 @@ class Topic < ApplicationRecord
   end
   before_save do
     if admin_editing == true && self.node_id_changed?
-      self.class.notify_topic_node_changed(id, node_id)
+      Topic.notify_topic_node_changed(id, node_id)
     end
   end
 
@@ -135,23 +132,6 @@ class Topic < ApplicationRecord
   after_commit :async_create_reply_notify, on: :create
   def async_create_reply_notify
     NotifyTopicJob.perform_later(id)
-  end
-
-  def followed?(uid)
-    follower_ids.include?(uid)
-  end
-
-  def push_follower(uid)
-    return false if uid == user_id
-    return false if followed?(uid)
-    push(follower_ids: uid)
-    true
-  end
-
-  def pull_follower(uid)
-    return false if uid == user_id
-    pull(follower_ids: uid)
-    true
   end
 
   def update_last_reply(reply, opts = {})
@@ -201,21 +181,26 @@ class Topic < ApplicationRecord
     excellent >= 1
   end
 
-  def ban!
-    update_attributes(lock_node: true, node_id: Node.no_point_id, admin_editing: true)
+  def ban!(opts = {})
+    transaction do
+      update(lock_node: true, node_id: Node.no_point.id, admin_editing: true)
+      if opts[:reason]
+        Reply.create_system_event(action: 'ban', topic_id: self.id, body: opts[:reason])
+      end
+    end
   end
 
   def excellent!
-    self.transaction do
+    transaction do
       Reply.create_system_event(action: 'excellent', topic_id: self.id)
-      update_attributes(excellent: 1)
+      update!(excellent: 1)
     end
   end
 
   def unexcellent!
-    self.transaction do
+    transaction do
       Reply.create_system_event(action: 'unexcellent', topic_id: self.id)
-      update_attributes(excellent: 0)
+      update!(excellent: 0)
     end
   end
 
@@ -228,7 +213,7 @@ class Topic < ApplicationRecord
     topic = Topic.find_by_id(topic_id)
     return unless topic && topic.user
 
-    follower_ids = topic.user.follower_ids.uniq
+    follower_ids = topic.user.follow_by_user_ids
     return if follower_ids.empty?
 
     notified_user_ids = topic.mentioned_user_ids
@@ -260,5 +245,17 @@ class Topic < ApplicationRecord
                         target: topic,
                         second_target: node
     true
+  end
+
+  def self.total_pages
+    return @total_pages if defined? @total_pages
+
+    total_count = Rails.cache.fetch('topics/total_count', expires_in: 1.week) do
+      self.unscoped.count
+    end
+    if total_count >= 1500
+      @total_pages = 60
+    end
+    @total_pages
   end
 end

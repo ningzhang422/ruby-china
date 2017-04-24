@@ -1,10 +1,10 @@
-if ENV['USE_OFFICIAL_GEM_SOURCE']
+if ENV['TRAVIS']
   source 'https://rubygems.org'
 else
   source 'https://gems.ruby-china.org'
 end
 
-gem 'rails', '~> 5.0.0'
+gem 'rails', '~> 5.0'
 gem 'sprockets'
 gem 'sass-rails'
 gem 'coffee-rails'
@@ -13,14 +13,17 @@ gem 'jquery-rails'
 gem 'jbuilder'
 gem 'turbolinks', '~> 5.0.0'
 gem 'dropzonejs-rails'
+gem 'rails_autolink'
+
+gem 'sanitize'
 
 gem 'pg'
+gem 'pghero'
 
 gem 'rack-attack'
 
-gem 'rails-i18n', '5.0.0.beta4'
+gem 'rails-i18n'
 gem 'http_accept_language'
-gem 'rails_autolink'
 gem 'twemoji'
 gem 'jquery-atwho-rails'
 gem 'font-awesome-rails'
@@ -33,8 +36,11 @@ gem 'bulk_insert'
 
 # 上传组件
 gem 'carrierwave'
+# Aliyun / Upyun 可选项
 gem 'carrierwave-upyun'
-gem 'mini_magick'
+gem 'carrierwave-aliyun'
+# Lazy load
+gem 'mini_magick', require: false
 
 # 验证码，头像
 gem 'rucaptcha'
@@ -48,13 +54,15 @@ gem 'devise-encryptable'
 gem 'notifications'
 gem 'ruby-push-notifications'
 
+# 赞、关注、收藏、屏蔽等功能的数据结构
+gem 'action-store'
+
 # 分页
-gem 'will_paginate'
+gem 'kaminari'
 
 # 搜索
 gem 'elasticsearch-model'
 gem 'elasticsearch-rails'
-gem 'redis-search'
 
 # 三方平台 OAuth 验证登陆
 gem 'omniauth'
@@ -68,6 +76,7 @@ gem 'redis'
 gem 'hiredis'
 gem 'redis-namespace'
 gem 'redis-objects'
+gem 'redis-session-store'
 
 # Cache
 gem 'second_level_cache'
@@ -75,24 +84,20 @@ gem 'second_level_cache'
 # Setting
 gem 'rails-settings-cached'
 
-# Markdown
-gem 'redcarpet', '~> 3.3.4'
-gem 'rouge'
+# HTML Pipeline
+gem 'html-pipeline'
+gem 'html-pipeline-rouge_filter'
+gem 'redcarpet'
 gem 'auto-space'
 
 # 队列
 gem 'sidekiq'
-# Sidekiq Web
-gem 'sinatra', '~> 2.0.0.beta2'
 
 # 分享功能
 gem 'social-share-button'
 
 # 表单
 gem 'simple_form'
-
-# API
-gem 'active_model_serializers'
 
 # Mailer Service
 gem 'postmark'
@@ -108,33 +113,37 @@ gem 'puma'
 gem 'rack-cors', require: 'rack/cors'
 gem 'rack-utf8_sanitizer'
 
-gem 'oneapm_rpm'
-gem 'exception_notification'
+gem 'exception-track'
 gem 'status-page'
 
+gem 'bundler-audit', require: false
+
+# Homeland Plugins
+gem 'homeland-press'
+gem 'homeland-jobs'
+gem 'homeland-wiki'
+gem 'homeland-note'
+gem 'homeland-site'
+
+gem 'sdoc', '1.0.0.rc1'
+
 group :development do
-  gem 'capistrano', '2.9.0', require: false
-  gem 'rvm-capistrano', require: false
-  gem 'capistrano-sidekiq'
   gem 'derailed'
   # Better Errors
   gem 'better_errors'
-  gem 'binding_of_caller'
   gem 'spring'
   gem 'spring-commands-rspec'
 end
 
 group :development, :test do
   gem 'listen'
-  gem 'rubocop', '~> 0.39.0', require: false
+  gem 'rubocop', require: false
   gem 'rspec-rails'
   gem 'factory_girl_rails'
   gem 'database_cleaner'
   gem 'capybara'
-  gem 'jasmine-rails', '~> 0.10.2'
   gem 'letter_opener'
+  gem 'yard'
 
   gem 'codecov', require: false
-  gem 'bundler-audit', require: false
-  gem 'pry-byebug'
 end

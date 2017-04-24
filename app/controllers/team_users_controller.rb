@@ -1,4 +1,6 @@
 class TeamUsersController < ApplicationController
+  require_module_enabled! :team
+
   before_action :set_team
   before_action :set_team_user, only: [:edit, :update, :destroy]
   before_action :authorize_team_owner!, except: [:index, :accept, :reject, :show]
@@ -7,9 +9,9 @@ class TeamUsersController < ApplicationController
   def index
     @team_users = @team.team_users
     if cannot? :update, @team
-      @team_users= @team_users.accepted
+      @team_users = @team_users.accepted
     end
-    @team_users = @team_users.order('id asc').includes(:user).paginate(page: params[:page], per_page: 20)
+    @team_users = @team_users.order('id asc').includes(:user).page(params[:page])
   end
 
   def new
@@ -33,7 +35,7 @@ class TeamUsersController < ApplicationController
   end
 
   def update
-    if @team_user.update_attributes(params.require(:team_user).permit(:role))
+    if @team_user.update(params.require(:team_user).permit(:role))
       redirect_to(user_team_users_path(@team), notice: '保存成功')
     else
       render action: 'edit'
@@ -72,7 +74,7 @@ class TeamUsersController < ApplicationController
   end
 
   def set_team
-    @team = Team.find_login!(params[:user_id])
+    @team = Team.find_by_login!(params[:user_id])
   end
 
   def team_user_params

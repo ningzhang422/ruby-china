@@ -75,7 +75,13 @@ body {
   }
 }
 
+.container > .alert {
+  margin-right: 0;
+}
 .alert {
+  border-radius: 0;
+  border: 0;
+  box-shadow: 0;
   padding: 10px;
   font-size: 14px;
   border-top: 0;
@@ -321,5 +327,13 @@ body {
 
   .node-topics {
     border-bottom: 1px solid #ddd;
+  }
+}
+
+.setting-menu {
+  padding-left: 0;
+  .nav-stacked.nav-pills > li a {
+    border-radius: 0 !important;
+    border-left: 0;
   }
 }

@@ -9,17 +9,15 @@ window.TopicView = Backbone.View.extend
   clearHightTimer: null
 
   events:
+    "click .navbar .topic-title": "scrollPage"
     "click #replies .reply .btn-reply": "reply"
-    "click .btn-focus-reply": "reply"
-    "click #topic-upload-image": "browseUpload"
-    "click .insert-codes a": "appendCodesFromHint"
-    "click .pickup-emoji": "pickupEmoji"
     "click a.at_floor": "clickAtFloor"
     "click a.follow": "follow"
     "click a.bookmark": "bookmark"
     "click .btn-move-page": "scrollPage"
     "click .notify-updated .update": "updateReplies"
     "click #node-selector .nodes .name a": "nodeSelectorNodeSelected"
+    "click .editor-toolbar .reply-to a.close": "unsetReplyTo"
     "tap .topics .topic": "topicRowClick"
 
   initialize: (opts) ->
@@ -27,11 +25,15 @@ window.TopicView = Backbone.View.extend
 
     @initComponents()
     @initCableUpdate()
-    @initDropzone()
     @initContentImageZoom()
     @initCloseWarning()
     @checkRepliesLikeStatus()
+    @itemsUpdated()
+
+  # called by new Reply insterted.
+  itemsUpdated: ->
     @resetClearReplyHightTimer()
+    @loadReplyToFloor()
 
   resetClearReplyHightTimer: ->
     clearTimeout(@clearHightTimer)
@@ -39,130 +41,31 @@ window.TopicView = Backbone.View.extend
       $(".reply").removeClass("light")
     , 10000
 
-
-  initDropzone: ->
-    self = @
-    editor = $("textarea.topic-editor")
-    editor.wrap "<div class=\"topic-editor-dropzone\"></div>"
-
-    editor_dropzone = $('.topic-editor-dropzone')
-    editor_dropzone.on 'paste', (event) =>
-      self.handlePaste(event)
-
-    dropzone = editor_dropzone.dropzone(
-      url: "/photos"
-      dictDefaultMessage: ""
-      clickable: true
-      paramName: "file"
-      maxFilesize: 20
-      uploadMultiple: false
-      headers:
-        "X-CSRF-Token": $("meta[name=\"csrf-token\"]").attr("content")
-      previewContainer: false
-      processing: ->
-        $(".div-dropzone-alert").alert "close"
-        self.showUploading()
-      dragover: ->
-        editor.addClass "div-dropzone-focus"
-        return
-      dragleave: ->
-        editor.removeClass "div-dropzone-focus"
-        return
-      drop: ->
-        editor.removeClass "div-dropzone-focus"
-        editor.focus()
-        return
-      success: (header, res) ->
-        self.appendImageFromUpload([res.url])
-        return
-      error: (temp, msg) ->
-        App.alert(msg)
-        return
-      totaluploadprogress: (num) ->
-        return
-      sending: ->
-        return
-      queuecomplete: ->
-        self.restoreUploaderStatus()
-        return
-    )
-
-  uploadFile: (item, filename) ->
-    self = @
-    formData = new FormData()
-    formData.append "file", item, filename
-    $.ajax
-      url: '/photos'
-      type: "POST"
-      data: formData
-      dataType: "JSON"
-      processData: false
-      contentType: false
-      beforeSend: ->
-        self.showUploading()
-      success: (e, status, res) ->
-        self.appendImageFromUpload([res.responseJSON.url])
-        self.restoreUploaderStatus()
-      error: (res) ->
-        App.alert("上传失败")
-        self.restoreUploaderStatus()
-      complete: ->
-        self.restoreUploaderStatus()
-
-  handlePaste: (e) ->
-    self = @
-    pasteEvent = e.originalEvent
-    if pasteEvent.clipboardData and pasteEvent.clipboardData.items
-      image = self.isImage(pasteEvent)
-      if image
-        e.preventDefault()
-        self.uploadFile image.getAsFile(), "image.png"
-
-  isImage: (data) ->
-    i = 0
-    while i < data.clipboardData.items.length
-      item = data.clipboardData.items[i]
-      if item.type.indexOf("image") isnt -1
-        return item
-      i++
-    return false
-
-  browseUpload: (e) ->
-    $(".topic-editor").focus()
-    $('.topic-editor-dropzone').click()
-    return false
-
-  showUploading: () ->
-    $("#topic-upload-image").hide()
-    if $("#topic-upload-image").parent().find("span.loading").length == 0
-      $("#topic-upload-image").before("<span class='loading'><i class='fa fa-circle-o-notch fa-spin'></i></span>")
-
-  restoreUploaderStatus: ->
-    $("#topic-upload-image").parent().find("span.loading").remove()
-    $("#topic-upload-image").show()
-
-  appendImageFromUpload : (srcs) ->
-    src_merged = ""
-    for src in srcs
-      src_merged = "![](#{src})\n"
-    @insertString(src_merged)
-    return false
-
   # 回复
   reply: (e) ->
     _el = $(e.target)
-    floor = _el.data("floor")
-    login = _el.data("login")
+    reply_to_id = _el.data('id')
+    @setReplyTo(reply_to_id)
     reply_body = $("#new_reply textarea")
-    if floor
-      new_text = "##{floor}楼 @#{login} "
-    else
-      new_text = ''
-    if reply_body.val().trim().length == 0
-      new_text += ''
-    else
-      new_text = "\n#{new_text}"
-    reply_body.focus().val(reply_body.val() + new_text)
+    reply_body.focus()
+    return false
+
+  setReplyTo: (id) ->
+    $('#reply_reply_to_id').val(id)
+    replyEl = $(".reply[data-id=#{id}]")
+    targetAnchor = replyEl.attr('id')
+    replyToPanel = $(".editor-toolbar .reply-to")
+    userNameEl = replyEl.find("a.user-name:first-child")
+    replyToLink = replyToPanel.find(".user")
+    replyToLink.attr("href", "##{targetAnchor}")
+    replyToLink.text(userNameEl.text())
+    replyToPanel.show()
+
+  unsetReplyTo: ->
+    $('#reply_reply_to_id').val('')
+    replyToPanel = $(".editor-toolbar .reply-to")
+    replyToPanel.hide()
+
     return false
 
   clickAtFloor: (e) ->
@@ -208,10 +111,11 @@ window.TopicView = Backbone.View.extend
     $("#new_reply textarea").focus()
     $('#reply-button').button('reset')
     @resetClearReplyHightTimer()
+    @unsetReplyTo()
 
   # 图片点击增加全屏预览功能
   initContentImageZoom : () ->
-    exceptClasses = ["emoji", "twemoji"]
+    exceptClasses = ["emoji", "twemoji", "media-object avatar-16"]
     imgEls = $(".markdown img")
     for el in imgEls
       if exceptClasses.indexOf($(el).attr("class")) == -1
@@ -314,37 +218,6 @@ window.TopicView = Backbone.View.extend
       $("form#new_reply").submit()
     return false
 
-  # 往话题编辑器里面的光标前插入两个空白字符
-  insertSpaces : (e) ->
-    @insertString('  ')
-    return false
-
-  # 往话题编辑器里面插入代码模版
-  appendCodesFromHint : (e) ->
-    link = $(e.currentTarget)
-    language = link.data("lang")
-    txtBox = $(".topic-editor")
-    caret_pos = txtBox.caret('pos')
-    prefix_break = ""
-    if txtBox.val().length > 0
-      prefix_break = "\n"
-    src_merged = "#{prefix_break }```#{language}\n\n```\n"
-    source = txtBox.val()
-    before_text = source.slice(0, caret_pos)
-    txtBox.val(before_text + src_merged + source.slice(caret_pos+1, source.count))
-    txtBox.caret('pos',caret_pos + src_merged.length - 5)
-    txtBox.focus()
-    txtBox.trigger('click')
-    return false
-
-  insertString: (str) ->
-    $target = $(".topic-editor")
-    start = $target[0].selectionStart
-    end = $target[0].selectionEnd
-    $target.val($target.val().substring(0, start) + str + $target.val().substring(end));
-    $target[0].selectionStart = $target[0].selectionEnd = start + str.length
-    $target.focus()
-
   scrollPage: (e) ->
     target = $(e.currentTarget)
     moveType = target.data('type')
@@ -364,17 +237,10 @@ window.TopicView = Backbone.View.extend
     $("textarea.topic-editor").bind "keydown.mr", "Meta+return", (el) =>
       return @submitTextArea(el)
 
-    # 绑定文本框 tab 按键事件
-    $("textarea.topic-editor").unbind "keydown.tab"
-    $("textarea.topic-editor").bind "keydown.tab", "tab", (el) =>
-      return @insertSpaces(el)
-
-    $("textarea.topic-editor").autogrow()
-
     # also highlight if hash is reply#
-    matchResult = window.location.hash.match(/^#reply(\d+)$/)
+    matchResult = window.location.hash.match(/^#reply\-(\d+)$/)
     if matchResult?
-      @highlightReply($("#reply#{matchResult[1]}"))
+      @highlightReply($("#reply-#{matchResult[1]}").parent())
 
     @hookPreview($(".editor-toolbar"), $(".topic-editor"))
 
@@ -385,10 +251,13 @@ window.TopicView = Backbone.View.extend
         show : true
 
     # @ Mention complete
-    App.atReplyable("textarea")
+    App.mentionable("textarea", App.scanMentionableLogins($(".reply")))
 
     # Focus title field in new-topic page
     $("body[data-controller-name='topics'] #topic_title").focus()
+
+    # init editor toolbar
+    window._editor = new Editor()
 
   initCableUpdate: () ->
     self = @
@@ -397,30 +266,25 @@ window.TopicView = Backbone.View.extend
       return
 
     if !window.repliesChannel
-      console.log "init repliesChannel"
       window.repliesChannel = App.cable.subscriptions.create 'RepliesChannel',
+        topicId: null
+
         connected: ->
-          setTimeout =>
-            @followCurrentTopic()
-            $(window).on 'unload', -> window.repliesChannel.unfollow()
-            $(document).on 'page:change', -> window.repliesChannel.followCurrentTopic()
-          , 1000
+          @subscribe()
 
         received: (json) =>
-          if json.user_id == App.current_user_id
-            return false
-          if json.action == 'create'
-            if App.windowInActive
-              @updateReplies()
-            else
-              $(".notify-updated").show()
+          return false if json.user_id == App.current_user_id
+          return false if json.action != 'create'
+          if App.windowInActive
+            @updateReplies()
+          else
+            $(".notify-updated").show()
 
-        followCurrentTopic: ->
+        subscribe: ->
+          @topicId = Topics.topic_id
           @perform 'follow', topic_id: Topics.topic_id
-
-        unfollow: ->
-          @perform 'unfollow'
-
+    else if window.repliesChannel.topicId != Topics.topic_id
+      window.repliesChannel.subscribe()
 
   updateReplies: () ->
     lastId = $("#replies .reply:last").data('id')
@@ -432,20 +296,17 @@ window.TopicView = Backbone.View.extend
       $("#new_reply textarea").focus()
     false
 
-  pickupEmoji: () ->
-    if !window._emojiModal
-      window._emojiModal = new EmojiModalView()
-    window._emojiModal.show()
-    false
-
   nodeSelectorNodeSelected: (e) ->
     el = $(e.currentTarget)
-    e.preventDefault()
     $("#node-selector").modal('hide')
-    nodeId = el.data('id')
-    $('.form input[name="topic[node_id]"]').val(nodeId)
-    $('#node-selector-button').html(el.text())
-    false
+    if $('.form input[name="topic[node_id]"]').length > 0
+      e.preventDefault()
+      nodeId = el.data('id')
+      $('.form input[name="topic[node_id]"]').val(nodeId)
+      $('#node-selector-button').html(el.text())
+      return false
+    else
+      return true
 
   topicRowClick: (e) ->
     if !App.turbolinks
@@ -461,3 +322,9 @@ window.TopicView = Backbone.View.extend
     $(e.currentTarget).addClass('topic-visited')
     Turbolinks.visit(target.attr('href'))
     return false
+
+  loadReplyToFloor: ->
+    _.each $(".reply-to-block"), (el) =>
+      replyToId = $(el).data('reply-to-id')
+      floor = $("#reply-#{replyToId}").data('floor');
+      $(el).find('.reply-floor').text("\##{floor}")

@@ -1,11 +1,13 @@
 class TeamsController < ApplicationController
+  require_module_enabled! :team
   load_resource find_by: :login
   load_and_authorize_resource
 
   before_action :set_team, only: [:show, :edit, :update, :destroy]
 
   def index
-    render_404
+    @total_team_count = Team.count
+    @active_teams = Team.fields_for_list.hot.limit(100)
   end
 
   def show
@@ -30,7 +32,7 @@ class TeamsController < ApplicationController
   end
 
   def update
-    if @team.update_attributes(team_params)
+    if @team.update(team_params)
       redirect_to(edit_team_path(@team), notice: t('common.update_success'))
     else
       render action: 'edit'
@@ -44,6 +46,6 @@ class TeamsController < ApplicationController
   end
 
   def set_team
-    @team = Team.find_login!(params[:id])
+    @team = Team.find_by_login!(params[:id])
   end
 end

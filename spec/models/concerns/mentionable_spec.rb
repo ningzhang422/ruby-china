@@ -2,6 +2,7 @@ require 'rails_helper'
 
 ActiveRecord::Base.connection.create_table(:test_documents, force: true) do |t|
   t.integer :user_id
+  t.integer :reply_to_id
   t.integer :mentioned_user_ids, array: true, default: []
   t.text :body
   t.timestamps null: false
@@ -11,6 +12,7 @@ class TestDocument < ApplicationRecord
   include Mentionable
 
   belongs_to :user
+  belongs_to :reply_to, class_name: 'TestDocument'
   delegate :login, to: :user, prefix: true, allow_nil: true
 end
 
@@ -67,12 +69,23 @@ describe Mentionable, type: :model do
     end.not_to change(user.notifications.unread, :count)
   end
 
+  it 'should send mention to reply_to user' do
+    user = create :user
+    last_doc = TestDocument.create body: "@#{user.login}", user: user
+    user1 = create :user
+    expect do
+      TestDocument.create body: "hello", reply_to_id: last_doc.id, user: user1
+    end.to change(user.notifications.unread, :count)
+  end
+
   describe '.send_mention_notification' do
     let(:actor) { create(:user) }
     let(:user1) { create(:user) }
     let(:doc) { TestDocument.create body: "@#{user1.login} Bla bla", user: actor }
 
     it 'should world' do
+      expect(Notification).to receive(:realtime_push_to_client).exactly(2).times
+      expect(PushJob).to receive(:perform_later).exactly(2).times
       expect do
         doc.send_mention_notification
       end.to change(user1.notifications.unread, :count)

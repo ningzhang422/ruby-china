@@ -40,14 +40,14 @@ describe UsersHelper, type: :helper do
     it 'should work if user exists' do
       user = create(:user)
       img = image_tag(user.letter_avatar_url(96), class: 'media-object avatar-48')
-      expect(user_avatar_tag(user)).to eq link_to(raw(img), user_path(user))
+      expect(user_avatar_tag(user)).to eq link_to(raw(img), user_path(user), title: user.fullname)
     end
 
     it 'should work if avatar exist' do
       user = create(:avatar_user)
       image_url = user.avatar.url(:md)
       img = image_tag(image_url, class: 'media-object avatar-48')
-      expect(user_avatar_tag(user)).to eq link_to(raw(img), user_path(user))
+      expect(user_avatar_tag(user)).to eq link_to(raw(img), user_path(user), title: user.fullname)
     end
 
     it 'should work with different size' do
@@ -58,7 +58,7 @@ describe UsersHelper, type: :helper do
       user = create(:avatar_user)
       image_url = user.avatar.url(:md) + "?t=#{user.updated_at.to_i}"
       img = image_tag(image_url, class: 'media-object avatar-48')
-      expect(user_avatar_tag(user, :md, timestamp: true)).to eq link_to(raw(img), user_path(user))
+      expect(user_avatar_tag(user, :md, timestamp: true)).to eq link_to(raw(img), user_path(user), title: user.fullname)
     end
 
     it 'should work if link is false' do
@@ -83,11 +83,6 @@ describe UsersHelper, type: :helper do
       is_expected.to eq '<span class="label label-success role">高级会员</span>'
     end
 
-    it 'hr should work' do
-      allow(user).to receive(:hr?).and_return(true)
-      is_expected.to eq '<span class="label label-success role">企业 HR</span>'
-    end
-
     it 'blocked should work' do
       allow(user).to receive(:blocked?).and_return(true)
       is_expected.to eq '<span class="label label-warning role">禁言用户</span>'
@@ -100,6 +95,23 @@ describe UsersHelper, type: :helper do
 
     it 'normal should work' do
       is_expected.to eq '<span class="label label-info role">会员</span>'
+    end
+  end
+
+  describe '.reward_user_tag' do
+    it 'should work' do
+      user = create(:user)
+      expect(helper.reward_user_tag(user)).to eq ''
+      expect(helper.reward_user_tag(nil)).to eq ''
+    end
+
+    it 'should workd' do
+      user = create(:user)
+      user.update_reward_fields(alipay: 'xxx')
+      html = helper.reward_user_tag(user)
+      expect(html).to eq %Q(<a class="btn btn-success" data-remote="true" href="/#{user.login}/reward"><i class='fa fa-qrcode'></i> <span>打赏支持</span></a>)
+      html = helper.reward_user_tag(user, class: 'btn btn-default')
+      expect(html).to eq %Q(<a class="btn btn-default" data-remote="true" href="/#{user.login}/reward"><i class='fa fa-qrcode'></i> <span>打赏支持</span></a>)
     end
   end
 end

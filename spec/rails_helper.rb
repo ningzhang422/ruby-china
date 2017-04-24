@@ -3,6 +3,7 @@ ENV['RAILS_ENV'] ||= 'test'
 require File.expand_path('../../config/environment', __FILE__)
 # Prevent database truncation if the environment is production
 abort('The Rails environment is running in production mode!') if Rails.env.production?
+abort('Do not use "upyun" as upload_provider!') if Setting.upload_provider == 'upyun'
 require 'spec_helper'
 require 'rspec/rails'
 require 'capybara/rspec'
@@ -38,6 +39,26 @@ Dir[Rails.root.join('spec/support/**/*.rb')].each { |f| require f }
 # If you are not using ActiveRecord, you can remove this line.
 # ActiveRecord::Migration.maintain_test_schema!
 
+ActiveRecord::Base.connection.create_table(:monkeys, force: true) do |t|
+  t.string :name
+  t.integer :user_id
+  t.integer :comments_count
+  t.timestamps null: false
+end
+
+ActiveRecord::Base.connection.create_table(:commentable_pages, force: true) do |t|
+  t.string :name
+  t.integer :user_id
+  t.integer :comments_count, default: 0, null: false
+  t.timestamps null: false
+end
+
+class CommentablePage < ApplicationRecord
+end
+
+class Monkey < ApplicationRecord
+end
+
 RSpec.configure do |config|
   # Remove this line if you're not using ActiveRecord or ActiveRecord fixtures
   config.fixture_path = "#{::Rails.root}/spec/fixtures"
@@ -70,6 +91,9 @@ RSpec.configure do |config|
     DatabaseCleaner.strategy = :truncation
     DatabaseCleaner.clean
     Rails.cache.clear
+
+    Monkey.delete_all
+    CommentablePage.delete_all
   end
 
   config.include Devise::Test::ControllerHelpers, type: :controller

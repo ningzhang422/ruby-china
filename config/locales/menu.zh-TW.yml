@@ -57,6 +57,8 @@
     access_denied: "訪問被拒絕，你可能沒有權限或未登錄。"
     editor_toolbar_edit: "編輯"
     editor_toolbar_preview: "預覽"
+    editor_add_image: "上傳圖片"
+    editor_insert_codes: "插入代碼"
     node: "節點"
     by: "由"
     at: "在"
@@ -75,8 +77,6 @@
   photos:
     upload_and_insert_code: "上傳並插入代碼"
     uploading: "正在上傳"
-  sites:
-    create: 提交網站
   menu:
     home: "首頁"
     topics: "社區"
@@ -84,13 +84,11 @@
     gems: "Gems"
     users: "會員"
     admin: "後臺"
-    notes: "記事本"
     nodes: "節點"
-    sites: "酷站"
-    jobs: "招聘"
     my_home_page: "我的主頁"
     edit_account_path: "個人資料設置"
     likes: "我的收藏"
+    teams: '團體 / 組織'
   comments:
     create_comment: "發表評論"
     no_comment: "暫無評論"
@@ -107,9 +105,13 @@
     recent_node_topics_description: "%{name} 社區 %{node_name} 節點最新發帖."
     recent_node_topics_title: "%{name} 社區 %{node_name} 節點"
   setting:
-    new_topic_dropdown_node_ids: "Sidebar 新建話題按鈕，下拉顯示的節點 (node_id)，逗號隔開如 (1,3,4)"
+    newbie_notices: "新手提示信息（支持 HTML）"
+    admin_emails: "管理員 Email，在此名單的將有管理員權限（一行一個）"
+    reject_newbie_reply_in_the_evening: "禁止新手在晚上回帖"
     node_ids_hide_in_topics_index: "要在論壇首頁列表隱藏的節點,以逗號隔開"
     custom_head_html: "自定 HTML head 區域的內容"
+    navbar_brand_html: "導航欄 Logo"
+    navbar_html: "導航欄自定 HTML"
     site_index_html: "酷站列表首頁頭的 HTML"
     topic_index_sidebar_html: "話題列表首頁邊欄 HTML"
     before_topic_html: "話題正文前面的 HTML"
@@ -119,3 +121,10 @@
     index_html: "網站首頁 HTML"
     tips: "隨機顯示的小帖士（一行一個）"
     ban_words_on_reply: "回帖禁止內容（一行一個）"
+    blacklist_ips: "黑名單 IP 列表，將會直接攔截請求（一行一個）"
+    newbie_limit_time: "新註冊用戶（新手）限制期，單位秒（0 不限制），在新手期不能創建新話題，僅能回帖"
+    ban_reasons: "屏蔽原因，將會在屏蔽話題的時候作為選項（一行一個）"
+  pagination:
+    next: "下一頁 &#8594;"
+    prev: "&#8592; 上一頁"
+    gap: "&hellip;"

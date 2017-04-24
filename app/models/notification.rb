@@ -4,14 +4,12 @@ class Notification < ActiveRecord::Base
 
   include Notifications::Model
 
-  self.per_page = 20
-
   after_create :realtime_push_to_client
   after_update :realtime_push_to_client
 
   def realtime_push_to_client
     if user
-      self.class.realtime_push_to_client(user)
+      Notification.realtime_push_to_client(user)
       PushJob.perform_later(user_id, apns_note)
     end
   end

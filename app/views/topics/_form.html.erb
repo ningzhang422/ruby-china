@@ -14,16 +14,18 @@
     </div>
   </div>
 
-  <%= render "editor_toolbar" %>
+  <%= render "/shared/editor_toolbar" %>
 
   <div class="form-group">
     <%= f.text_area :body, class: "topic-editor form-control closewarning", rows: 20 %>
   </div>
 
-  <% if current_user.team_collection.any? %>
-  <div class='form-group'>
-    <%= f.input :team_id, collection: current_user.team_collection, include_blank: '不要关联组织' %>
-  </div>
+  <% if Setting.has_module?(:team) %>
+    <% if current_user.team_collection.any? %>
+    <div class='form-group'>
+      <%= f.input :team_id, collection: current_user.team_collection, include_blank: '不要关联组织' %>
+    </div>
+    <% end %>
   <% end %>
 
   <div class="form-group hide-ios">

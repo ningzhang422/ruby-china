@@ -1,119 +1,43 @@
 ## Ruby China
 This is the source code of [Ruby China](http://ruby-china.org) website.
+=======
+Homeland
+--------
 
-[![Build Status](https://travis-ci.org/ruby-china/ruby-china.svg?branch=master)](https://travis-ci.org/ruby-china/ruby-china) [![Code Climate](https://codeclimate.com/github/ruby-china/ruby-china/badges/gpa.svg)](https://codeclimate.com/github/ruby-china/ruby-china) [![codecov.io](https://codecov.io/github/ruby-china/ruby-china/coverage.svg?branch=master)](https://codecov.io/github/ruby-china/ruby-china?branch=master)
 
-## Requirements
+Open source discussion website.
 
-* Ruby 2.3.0 +
-* PostgreSQL 9.4 +
-* Redis 2.8 +
-* Memcached 1.4 +
-* ImageMagick 6.5 +
-* Elasticsearch 2.0 +
+开源的论坛／社区网站系统，基于 [Ruby China](https://ruby-china.org) 发展而来。
 
-## Install in development
+[![Build Status](https://travis-ci.org/ruby-china/homeland.svg?branch=master)](https://travis-ci.org/ruby-china/homeland) [![codecov.io](https://codecov.io/github/ruby-china/homeland/coverage.svg?branch=master)](https://codecov.io/github/ruby-china/homeland?branch=master)
 
-### Vagrant
+## Deployment
 
-Install [VirtualBox](https://www.virtualbox.org/) + [Vagrant](https://www.vagrantup.com/), and then:
+Please visit https://gethomeland.com get more documents.
 
-```bash
-$ vagrant up
-$ vagrant ssh
-$ cd /vagrant
-/vagrant $ ./bin/setup
-/vagrant $ rails s -b 0.0.0.0
-```
+## Release Notes
 
-Open http://localhost:3000 in host.
+Please visit [Releases](https://github.com/ruby-china/homeland/releases) page.
 
-### Mac OS X, use Homebrew
+## Contribute Guide
 
-```bash
-$ brew install memcached redis postgresql imagemagick gs elasticsearch
-```
-
-### Ubuntu
-
-```bash
-$ sudo apt-get install memcached postgresql-9.4 redis-server imagemagick ghostscript
-```
-
-Install Elasticsearch
-
-```bash
-curl -sSL https://git.io/vVHhm | bash
-```
-
-```bash
-$ git clone https://github.com/ruby-china/ruby-china.git
-$ cd ruby-china
-$ ./bin/setup
-Checking Package Dependencies...
---------------------------------------------------------------------------------
-Redis 2.0+                                                                 [Yes]
-Memcached 1.4+                                                             [Yes]
-ImageMagick 6.5+                                                           [Yes]
---------------------------------------------------------------------------------
-
-Installing dependencies
---------------------------------------------------------------------------------
-The Gemfile's dependencies are satisfied
---------------------------------------------------------------------------------
-
-Configure
---------------------------------------------------------------------------------
-Your Redis host (default: 127.0.0.1:6379):
-Your Elasticsearch host (default: 127.0.0.1:9200):
---------------------------------------------------------------------------------
-
-Seed default data...                                                      [Done]
-
-== Removing old logs and tempfiles ==
-
-Ruby China Successfully Installed.
-
-$ rails s
-```
-
-## Testing
-
-```bash
-bundle exec rake
-```
-
-## Reindex ElasticSearch
-
-```bash
-rake environment elasticsearch:import:all DIR=app/models FORCE=y
-```
-
-## Contributors
-
-* [Contributors](https://github.com/ruby-china/ruby-china/contributors)
+Please read this document: [CONTRIBUTE GUIDE](https://github.com/ruby-china/homeland/blob/master/CONTRIBUTE.md)
 
 ## Thanks
 
+* [Contributors](https://github.com/ruby-china/homeland/contributors)
 * [Twitter Bootstrap](https://twitter.github.com/bootstrap)
 * [Font Awesome](http://fortawesome.github.io/Font-Awesome/icons/)
+* Forked from [Homeland Project](https://github.com/huacnlee/homeland)
+* Theme from [Mediom](https://github.com/huacnlee/mediom)
 
-Forked from [Homeland Project](https://github.com/huacnlee/homeland)
-Theme from [Mediom](https://github.com/huacnlee/mediom)
+## Sites used Homeland
 
-## Sites
-
-* [Ruby China](https://ruby-china.org)
-* [36kr](http://36kr.com/)
-* [TesterHome](https://testerhome.com)
-* [Coding Style](https://codingstyle.cn)
-* [DiyCode](http://www.diycode.cc/)
-* [Japan Trip](http://www.japantrip.cn/)
-* [EthFans](http://ethfans.org)
+https://gethomeland.com/expo
 
 ## License
 
-Copyright (c) 2011-2016 Ruby China
+Copyright (c) 2011-2017 Ruby China
 
 Released under the MIT license:
 
