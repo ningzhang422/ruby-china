@@ -4,7 +4,7 @@ else
   source 'https://gems.ruby-china.org'
 end
 
-gem 'rails', '~> 5.0'
+gem 'rails', '~> 5.1.0'
 gem 'sprockets'
 gem 'sass-rails'
 gem 'coffee-rails'
@@ -76,7 +76,6 @@ gem 'redis'
 gem 'hiredis'
 gem 'redis-namespace'
 gem 'redis-objects'
-gem 'redis-session-store'
 
 # Cache
 gem 'second_level_cache'
@@ -137,7 +136,7 @@ end
 
 group :development, :test do
   gem 'listen'
-  gem 'rubocop', require: false
+  gem 'rubocop', '0.47.1', require: false
   gem 'rspec-rails'
   gem 'factory_girl_rails'
   gem 'database_cleaner'

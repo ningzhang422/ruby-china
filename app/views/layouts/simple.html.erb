@@ -3,11 +3,9 @@
 <head>
   <meta charset='utf-8' />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title><%= yield(:title) || Setting.app_name %></title>
+  <title><%= content_for?(:title) ? yield(:title) : Setting.app_name %></title>
   <meta name="apple-mobile-web-app-capable" content="no">
   <meta content='True' name='HandheldFriendly' />
-  <link rel="apple-touch-icon-precomposed" href="<%= asset_path("ios-icon.png") %>" />
-  <link rel="shortcut icon" href="<%= asset_path("big_logo.png") %>" />
   <%= stylesheet_link_tag "front" %>
   <%= javascript_include_tag "app" %>
   <%= csrf_meta_tag %>
@@ -21,8 +19,10 @@
           <%= raw Setting.navbar_brand_html %>
         </div>
 
-        <div id="main-nav-menu">
+        <div class="collapse navbar-collapse" id="main-navbar-collapse">
+          <%= render "shared/navbar" %>
         </div>
+        <%= render "shared/usernav" %>
       </div>
     </nav>
   </div>
